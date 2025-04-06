@@ -3,36 +3,17 @@
   become: true
   tasks:
 
-  - name: update repository index 
-    ansible.builtin.apt:
-      update_cache: yes
-    when: ansible_distribution == "Ubuntu"
+    - name: Install python3-libdnf5 on Fedora systems
+      ansible.builtin.dnf:
+        name: python3-libdnf5
+        state: present
+      when: ansible_facts['distribution'] == 'Fedora'
 
-  - name: install apache2 package
-    ansible.builtin.apt:
-      name: apache2
-      state: latest
-    when: ansible_distribution == "Ubuntu"
+    - name: install apache2 package
+      ansible.builtin.package:
+        name: 
+          - "{{ apache_package }}"
+          - "{{ php_package }}"
+        state: latest
+        update_cache: yes
 
-  - name: install support for php
-    ansible.builtin.apt:
-      name: libapache2-mod-php
-      state: latest
-    when: ansible_distribution == "Ubuntu"
-
-  - name: update repository index
-    ansible.builtin.dnf:
-      update_cache: yes
-    when: ansible_distribution == "Fedora"
-
-  - name: install httpd package
-    ansible.builtin.dnf:
-      name: httpd
-      state: latest
-    when: ansible_distribution == "Fedora"
-
-  - name: add php support for apache
-    ansible.builtin.dnf:
-      name: php
-      state: latest
-    when: ansible_distribution == "Fedora"
