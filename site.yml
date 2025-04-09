@@ -2,10 +2,12 @@
 - hosts: all
   become: true
   pre_tasks:
+
   - name: install updates for fedora
     tags: always
     ansible.builtin.dnf:
       update_only: yes
+      update_cache: yes
     when: ansible_distribution == "Fedora"
 
   - name: install updates for Ubuntu
@@ -15,17 +17,60 @@
       update_cache: yes
     when: ansible_distribution == "Ubuntu"
 
+  - name: create user
+    tags: always
+    ansible.builtin.user:
+      name: simone
+      groups: root
+
+  - name: add sudoers file for simone 
+    tags: always
+    ansible.builtin.copy:
+      src: sudoer_simone
+      dest: /etc/sudoers.d/simone
+      owner: root
+      group: root
+      mode: 0440
+
+  - name: add ssh key for simone user
+    tags: always
+    ansible.builtin.authorized_key:
+      user: simone
+      key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH/UUt98L1K37Y9WDhxeO4uoFdlNQwly+A3FyLKX0I24 mark@ubuntu-ws"
+
 - hosts: web_servers
   become: true
   tasks:
 
-  - name: install apache on web servers
-    tags: apache,ubuntu    
+  - name: install apache on web servers (ubuntu)
+    tags: apache,ubuntu
     ansible.builtin.apt:
       name:
         - apache2
         - libapache2-mod-php
-    when: ansible distribution == "Ubuntu"
+    when: ansible_distribution == "Ubuntu"
+
+  - name: install apache on web servers (fedora)
+    tags: apahce, fedora
+    ansible.builtin.dnf:
+      name: httpd
+    when: ansible_distribution == "Fedora"
+
+  - name: ensure apache is running (ubuntu)
+    tags: apache,ubuntu
+    ansible.builtin.service:
+      name: httpd
+      state: started
+    when: ansible_distribution == "Fedora"
+
+  - name: copy html file for site
+    tags: apache, ubuntu
+    ansible.builtin.copy:
+      src: default_site.html
+      dest: /var/www/html/index.html
+      owner: root
+      group: root
+      mode: 0644
 
 - hosts: db_servers
   tags: db,fedora
